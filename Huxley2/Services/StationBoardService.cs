@@ -1,7 +1,6 @@
 // © James Singleton. EUPL-1.2 (see the LICENSE file for the full license governing this code).
 // Modified to include headcode (trainid) enrichment from Rail Data Marketplace.
  
-using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
 using Huxley2.Interfaces;
@@ -44,10 +43,10 @@ namespace Huxley2.Services
                     var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
                     foreach (var service in result.trainServices)
                     {
-                        if (service == null || !service.stdSpecified) continue;
+                        if (service == null || string.IsNullOrEmpty(service.std)) continue;
                         var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
                         if (destCrs == null) continue;
-                        var key = $"{service.std.ToString("HH:mm", CultureInfo.InvariantCulture)}|{destCrs}";
+                        var key = $"{service.std}|{destCrs}";
                         if (headcodes.TryGetValue(key, out var trainid))
                         {
                             service.trainid = trainid;
