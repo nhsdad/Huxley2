@@ -48,7 +48,7 @@ namespace Huxley2.Services
                 return new Dictionary<string, string>();
             }
 
-            _logger.LogInformation($"HeadcodeService: fetching headcodes for {crs} with key length {_apiKey.Length}");
+            _logger.LogWarning($"HeadcodeService: fetching headcodes for {crs} with key length {_apiKey.Length}");
  
             var cacheKey = $"{crs}|{timeOffset}";
  
@@ -92,7 +92,7 @@ namespace Huxley2.Services
  
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-apikey", _apiKey);
-                _logger.LogInformation($"HeadcodeService: calling {url}");
+                _logger.($"HeadcodeService: calling {url}");
                 var response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
@@ -137,7 +137,7 @@ namespace Huxley2.Services
                     result.TryAdd(key, trainid);
                 }
  
-                _logger.LogInformation($"HeadcodeService: fetched {result.Count} headcodes for {crs}");
+                _logger.($"HeadcodeService: fetched {result.Count} headcodes for {crs}");
             }
             catch (Exception ex)
             {
