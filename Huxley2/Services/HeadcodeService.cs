@@ -86,7 +86,8 @@ namespace Huxley2.Services
  
             try
             {
-                var now = DateTime.Now.AddMinutes(timeOffset);
+                var ukTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
+                var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ukTimeZone).AddMinutes(timeOffset);
                 var timeParam = now.ToString("yyyyMMddTHHmmss");
                 var url = $"{BaseUrl}/GetDepBoardWithDetails/{crs.ToUpper()}/{timeParam}";
  
