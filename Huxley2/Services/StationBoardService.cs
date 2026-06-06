@@ -127,19 +127,19 @@ namespace Huxley2.Services
             // ServiceItemWithLocations2 inherits from ServiceItem3 which inherits from BaseServiceItem2
             // BaseServiceItem2 has trainid — so we can set it directly
             if (board is StationBoardWithDetails2 publicBoard && publicBoard.trainServices != null)
-            {
-                foreach (var service in publicBoard.trainServices)
-                {
-                    if (service?.std == null) continue;
-                    var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
-                    if (destCrs == null) continue;
-                    var key = $"{service.std:HH:mm}|{destCrs}";
-                    if (headcodes.TryGetValue(key, out var trainid))
-                    {
-                        service.trainid = trainid;
-                    }
-                }
-            }
+{
+    foreach (var service in publicBoard.trainServices)
+    {
+        if (!service.stdSpecified) continue;
+        var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
+        if (destCrs == null) continue;
+        var key = $"{service.std:HH:mm}|{destCrs}";
+        if (headcodes.TryGetValue(key, out var trainid))
+        {
+            service.trainid = trainid;
+        }
+    }
+}
         }
     }
 }
