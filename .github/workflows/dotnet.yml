@@ -14,7 +14,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Build
-        run: dotnet publish Huxley2/Huxley2.csproj -c Release -o ./publish --self-contained true -r linux-x64
+        run: dotnet publish Huxley2/Huxley2.csproj -c Release -o ./publish --self-contained true -r linux-x64 -p:InvariantGlobalization=false
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
