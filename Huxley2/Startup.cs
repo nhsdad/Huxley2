@@ -29,7 +29,7 @@ namespace Huxley2
             {
                 options.EnableForHttps = true;
             });
-            services.AddResponseCaching();
+            // services.AddResponseCaching();
             services.AddControllers();
             services.AddRazorPages();
             services.AddCors();
@@ -78,7 +78,7 @@ namespace Huxley2
             app.UseStaticFiles();
             app.UseETagger();
             app.UseRouting();
-            app.UseResponseCaching();
+            // app.UseResponseCaching();
             app.UseCors(config => config.AllowAnyOrigin());
  
             app.UseEndpoints(endpoints =>
