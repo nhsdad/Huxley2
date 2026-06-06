@@ -47,7 +47,6 @@ namespace Huxley2.Services
                         var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
                         if (destCrs == null) continue;
                         var key = $"{service.std}|{destCrs}";
-                        _logger.LogWarning($"StationBoardService: looking up key '{key}'");
                         if (headcodes.TryGetValue(key, out var trainid))
                         {
                             service.trainid = trainid;
