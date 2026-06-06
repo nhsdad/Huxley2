@@ -1,11 +1,13 @@
-﻿// © James Singleton. EUPL-1.2 (see the LICENSE file for the full license governing this code).
-
+ // © James Singleton. EUPL-1.2 (see the LICENSE file for the full license governing this code).
+// Modified to include headcode (trainid) enrichment from Rail Data Marketplace.
+ 
 using System.Threading.Tasks;
 using Huxley2.Interfaces;
 using Huxley2.Models;
 using Microsoft.Extensions.Logging;
 using OpenLDBWS;
-
+using OpenLDBSVWS;
+ 
 namespace Huxley2.Services
 {
     public class StationBoardService : IStationBoardService
@@ -13,33 +15,42 @@ namespace Huxley2.Services
         private readonly ILogger<StationBoardService> _logger;
         private readonly IMapperService _mapperService;
         private readonly LDBServiceSoap _soapClient;
-
+        private readonly HeadcodeService _headcodeService;
+ 
         public StationBoardService(
             ILogger<StationBoardService> logger,
             IMapperService mapperService,
-            LDBServiceSoap soapClient
+            LDBServiceSoap soapClient,
+            HeadcodeService headcodeService
         )
         {
             _logger = logger;
             _mapperService = mapperService;
             _soapClient = soapClient;
+            _headcodeService = headcodeService;
         }
-
+ 
         public async Task<BaseStationBoard> GetDepartureBoardAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling departure board SOAP endpoint for {request.Crs}");
+            BaseStationBoard board;
             if (request.Expand)
             {
                 var boardWithDetails = await _soapClient.GetDepBoardWithDetailsAsync(
                     _mapperService.MapGetDepBoardWithDetailsRequest(request));
-                return boardWithDetails.GetStationBoardResult;
+                board = boardWithDetails.GetStationBoardResult;
             }
-
-            var board = await _soapClient.GetDepartureBoardAsync(
-                _mapperService.MapGetDepartureBoardRequest(request));
-            return board.GetStationBoardResult;
+            else
+            {
+                var result = await _soapClient.GetDepartureBoardAsync(
+                    _mapperService.MapGetDepartureBoardRequest(request));
+                board = result.GetStationBoardResult;
+            }
+ 
+            await EnrichWithHeadcodesAsync(board, request);
+            return board;
         }
-
+ 
         public async Task<BaseStationBoard> GetArrivalBoardAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling arrival board SOAP endpoint for {request.Crs}");
@@ -49,12 +60,12 @@ namespace Huxley2.Services
                     _mapperService.MapGetArrBoardWithDetailsRequest(request));
                 return boardWithDetails.GetStationBoardResult;
             }
-
+ 
             var board = await _soapClient.GetArrivalBoardAsync(
                 _mapperService.MapGetArrivalBoardRequest(request));
             return board.GetStationBoardResult;
         }
-
+ 
         public async Task<BaseStationBoard> GetArrivalDepartureBoardAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling arrival departure board SOAP endpoint for {request.Crs}");
@@ -64,12 +75,12 @@ namespace Huxley2.Services
                     _mapperService.MapGetArrDepBoardWithDetailsRequest(request));
                 return boardWithDetails.GetStationBoardResult;
             }
-
+ 
             var board = await _soapClient.GetArrivalDepartureBoardAsync(
                 _mapperService.MapGetArrivalDepartureBoardRequest(request));
             return board.GetStationBoardResult;
         }
-
+ 
         public async Task<BaseStationBoard> GetNextDeparturesAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling next departures SOAP endpoint for {request.Crs}");
@@ -79,12 +90,12 @@ namespace Huxley2.Services
                     _mapperService.MapGetNextDeparturesWithDetailsRequest(request));
                 return boardWithDetails.DeparturesBoard;
             }
-
+ 
             var board = await _soapClient.GetNextDeparturesAsync(
                 _mapperService.MapGetNextDeparturesRequest(request));
             return board.DeparturesBoard;
         }
-
+ 
         public async Task<BaseStationBoard> GetFastestDeparturesAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling fastest departures SOAP endpoint for {request.Crs}");
@@ -94,12 +105,63 @@ namespace Huxley2.Services
                     _mapperService.MapGetFastestDeparturesWithDetailsRequest(request));
                 return boardWithDetails.DeparturesBoard;
             }
-
+ 
             var board = await _soapClient.GetFastestDeparturesAsync(
                 _mapperService.MapGetFastestDeparturesRequest(request));
             return board.DeparturesBoard;
         }
-
+ 
         public string GenerateChecksum(BaseStationBoard board) => ChecksumGenerator.GenerateChecksum(board);
+ 
+        // MARK: - Headcode Enrichment
+ 
+        private async Task EnrichWithHeadcodesAsync(BaseStationBoard board, StationBoardRequest request)
+        {
+            if (board == null) return;
+ 
+            // Only enrich departure boards with expanded details
+            if (!request.Expand) return;
+ 
+            var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
+            if (headcodes.Count == 0) return;
+ 
+            // StationBoardWithDetails contains ServiceItem3[] trainServices
+            if (board is OpenLDBSVWS.StationBoardWithDetails staffBoard && staffBoard.trainServices != null)
+            {
+                foreach (var service in staffBoard.trainServices)
+                {
+                    TrySetTrainId(service, headcodes);
+                }
+                return;
+            }
+ 
+            // Try public StationBoardWithDetails
+            if (board is OpenLDBWS.StationBoardWithDetails publicBoard && publicBoard.trainServices != null)
+            {
+                foreach (var service in publicBoard.trainServices)
+                {
+                    TrySetTrainIdPublic(service, headcodes);
+                }
+            }
+        }
+ 
+        private void TrySetTrainId(ServiceItem3 service, System.Collections.Generic.Dictionary<string, string> headcodes)
+        {
+            if (service?.std == null) return;
+            var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
+            if (destCrs == null) return;
+ 
+            var key = $"{service.std:HH:mm}|{destCrs}";
+            if (headcodes.TryGetValue(key, out var trainid))
+            {
+                service.trainid = trainid;
+            }
+        }
+ 
+        private void TrySetTrainIdPublic(OpenLDBWS.ServiceItem service, System.Collections.Generic.Dictionary<string, string> headcodes)
+        {
+            // Public ServiceItem doesn't have trainid — nothing to set
+            // This branch exists for completeness but won't enrich
+        }
     }
 }
