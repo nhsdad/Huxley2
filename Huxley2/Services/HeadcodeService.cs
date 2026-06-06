@@ -92,7 +92,7 @@ namespace Huxley2.Services
  
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-apikey", _apiKey);
-                _logger.($"HeadcodeService: calling {url}");
+                _logger.LogWarning($"HeadcodeService: calling {url}");
                 var response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
@@ -137,7 +137,7 @@ namespace Huxley2.Services
                     result.TryAdd(key, trainid);
                 }
  
-                _logger.($"HeadcodeService: fetched {result.Count} headcodes for {crs}");
+                _logger.LogWarning($"HeadcodeService: fetched {result.Count} headcodes for {crs}");
             }
             catch (Exception ex)
             {
