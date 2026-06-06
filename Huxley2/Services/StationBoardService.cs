@@ -2,11 +2,11 @@
 // Modified to include headcode (trainid) enrichment from Rail Data Marketplace.
  
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using Huxley2.Interfaces;
 using Huxley2.Models;
 using Microsoft.Extensions.Logging;
-using OpenLDBSVWS;
 using OpenLDBWS;
  
 namespace Huxley2.Services
@@ -31,7 +31,7 @@ namespace Huxley2.Services
             _headcodeService = headcodeService;
         }
  
-        public async Task<OpenLDBWS.BaseStationBoard> GetDepartureBoardAsync(StationBoardRequest request)
+        public async Task<BaseStationBoard> GetDepartureBoardAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling departure board SOAP endpoint for {request.Crs}");
             if (request.Expand)
@@ -39,7 +39,21 @@ namespace Huxley2.Services
                 var boardWithDetails = await _soapClient.GetDepBoardWithDetailsAsync(
                     _mapperService.MapGetDepBoardWithDetailsRequest(request));
                 var result = boardWithDetails.GetStationBoardResult;
-                await EnrichWithHeadcodesAsync(result?.trainServices, request);
+                if (result?.trainServices != null)
+                {
+                    var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
+                    foreach (var service in result.trainServices)
+                    {
+                        if (service == null || !service.stdSpecified) continue;
+                        var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
+                        if (destCrs == null) continue;
+                        var key = $"{service.std.ToString("HH:mm", CultureInfo.InvariantCulture)}|{destCrs}";
+                        if (headcodes.TryGetValue(key, out var trainid))
+                        {
+                            service.trainid = trainid;
+                        }
+                    }
+                }
                 return result;
             }
  
@@ -48,7 +62,7 @@ namespace Huxley2.Services
             return board.GetStationBoardResult;
         }
  
-        public async Task<OpenLDBWS.BaseStationBoard> GetArrivalBoardAsync(StationBoardRequest request)
+        public async Task<BaseStationBoard> GetArrivalBoardAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling arrival board SOAP endpoint for {request.Crs}");
             if (request.Expand)
@@ -63,7 +77,7 @@ namespace Huxley2.Services
             return board.GetStationBoardResult;
         }
  
-        public async Task<OpenLDBWS.BaseStationBoard> GetArrivalDepartureBoardAsync(StationBoardRequest request)
+        public async Task<BaseStationBoard> GetArrivalDepartureBoardAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling arrival departure board SOAP endpoint for {request.Crs}");
             if (request.Expand)
@@ -78,7 +92,7 @@ namespace Huxley2.Services
             return board.GetStationBoardResult;
         }
  
-        public async Task<OpenLDBWS.BaseStationBoard> GetNextDeparturesAsync(StationBoardRequest request)
+        public async Task<BaseStationBoard> GetNextDeparturesAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling next departures SOAP endpoint for {request.Crs}");
             if (request.Expand)
@@ -93,7 +107,7 @@ namespace Huxley2.Services
             return board.DeparturesBoard;
         }
  
-        public async Task<OpenLDBWS.BaseStationBoard> GetFastestDeparturesAsync(StationBoardRequest request)
+        public async Task<BaseStationBoard> GetFastestDeparturesAsync(StationBoardRequest request)
         {
             _logger.LogInformation($"Calling fastest departures SOAP endpoint for {request.Crs}");
             if (request.Expand)
@@ -108,28 +122,6 @@ namespace Huxley2.Services
             return board.DeparturesBoard;
         }
  
-        public string GenerateChecksum(OpenLDBWS.BaseStationBoard board) => ChecksumGenerator.GenerateChecksum(board);
- 
-        // MARK: - Headcode Enrichment
- 
-        private async Task EnrichWithHeadcodesAsync(ServiceItemWithLocations1[] trainServices, StationBoardRequest request)
-        {
-            if (trainServices == null || trainServices.Length == 0) return;
- 
-            var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
-            if (headcodes.Count == 0) return;
- 
-            foreach (var service in trainServices)
-            {
-                if (service == null || !service.stdSpecified) continue;
-                var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
-                if (destCrs == null) continue;
-                var key = $"{service.std.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture)}|{destCrs}";
-                if (headcodes.TryGetValue(key, out var trainid))
-                {
-                    service.trainid = trainid;
-                }
-            }
-        }
+        public string GenerateChecksum(BaseStationBoard board) => ChecksumGenerator.GenerateChecksum(board);
     }
 }
