@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Huxley2.Interfaces;
 using Huxley2.Models;
 using Microsoft.Extensions.Logging;
-using OpenLDBSVWS;
 using OpenLDBWS;
  
 namespace Huxley2.Services
@@ -123,11 +122,11 @@ namespace Huxley2.Services
             var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
             if (headcodes.Count == 0) return;
  
-            // The public Darwin SOAP API returns StationBoardWithDetails2 (OpenLDBSVWS namespace)
-            // which contains ServiceItemWithLocations2[] — these inherit trainid from BaseServiceItem2
-            if (board is OpenLDBSVWS.StationBoardWithDetails2 publicBoard && publicBoard.trainServices != null)
+            // The public Darwin SOAP API returns StationBoardWithDetails2 (in OpenLDBSVWS namespace)
+            // which contains ServiceItemWithLocations2[] items that inherit trainid from BaseServiceItem2
+            if (board is OpenLDBSVWS.StationBoardWithDetails2 svBoard && svBoard.trainServices != null)
             {
-                foreach (var service in publicBoard.trainServices)
+                foreach (var service in svBoard.trainServices)
                 {
                     if (!service.stdSpecified) continue;
                     var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
