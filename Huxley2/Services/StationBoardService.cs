@@ -42,16 +42,8 @@ namespace Huxley2.Services
                 if (result?.trainServices != null)
                 {
                     var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
-                    if (request.Crs == "CLJ") {
-                        _logger.LogWarning($"CLJ headcodes: {string.Join(", ", headcodes.Take(5).Select(kv => kv.Key + "=" + kv.Value))}");
-                        foreach (var svc in result.trainServices)
-                        {
-                            if (svc == null || string.IsNullOrEmpty(svc.std)) continue;
-                            var d = svc.destination?.Length > 0 ? svc.destination[0]?.crs : null;
-                            _logger.LogWarning($"CLJ SOAP: {svc.std}|{d}");
-                        }
-}
-foreach (var service in result.trainServices)
+                   
+                    foreach (var service in result.trainServices)
                     {
                         if (service == null || string.IsNullOrEmpty(service.std)) continue;
                         var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
