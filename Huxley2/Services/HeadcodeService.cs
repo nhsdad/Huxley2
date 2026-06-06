@@ -92,7 +92,7 @@ namespace Huxley2.Services
  
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-apikey", _apiKey);
- 
+                _logger.LogInformation($"HeadcodeService: calling {url}");
                 var response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
