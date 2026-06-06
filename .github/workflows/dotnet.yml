@@ -19,7 +19,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Build
-        run: dotnet publish Huxley2/Huxley2.csproj -c Release -o ./publish
+  run: dotnet publish Huxley2/Huxley2.csproj -c Release -o ./publish --self-contained true -r linux-x64
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
