@@ -62,7 +62,13 @@ namespace Huxley2.Services
                 _cacheLock.Release();
             }
  
-            var result = await FetchHeadcodesAsync(crs, timeOffset);
+            var result0 = await FetchHeadcodesAsync(crs, timeOffset);
+            var result60 = await FetchHeadcodesAsync(crs, timeOffset + 60);
+            var result120 = await FetchHeadcodesAsync(crs, timeOffset + 120);
+
+            var result = new Dictionary<string, string>(result0);
+            foreach (var kv in result60) result.TryAdd(kv.Key, kv.Value);
+            foreach (var kv in result120) result.TryAdd(kv.Key, kv.Value);
  
             await _cacheLock.WaitAsync();
             try
