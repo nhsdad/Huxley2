@@ -96,7 +96,7 @@ namespace Huxley2.Services
                 var ukTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
                 var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ukTimeZone).AddMinutes(timeOffset);
                 var timeParam = now.ToString("yyyyMMddTHHmmss");
-                var url = $"{BaseUrl}/GetDepBoardWithDetails/{crs.ToUpper()}/{timeParam}";
+                var url = $"{BaseUrl}/GetDepBoardWithDetails/150/{crs.ToUpperInvariant()}/{timeParam}";
  
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-apikey", _apiKey);
