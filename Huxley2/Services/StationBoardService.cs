@@ -41,6 +41,9 @@ namespace Huxley2.Services
                 if (result?.trainServices != null)
                 {
                     var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
+                    if (request.Crs == "CLJ") {
+                    _logger.LogWarning($"CLJ headcodes: {string.Join(", ", headcodes.Take(5).Select(kv => kv.Key + "=" + kv.Value))}");
+                    }
                     foreach (var service in result.trainServices)
                     {
                         if (service == null || string.IsNullOrEmpty(service.std)) continue;
