@@ -44,11 +44,8 @@ namespace Huxley2.Services
         {
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                _logger.LogWarning("HeadcodeService: DarwinStaffAccessToken not configured, skipping headcode lookup");
                 return new Dictionary<string, string>();
             }
-
-            _logger.LogWarning($"HeadcodeService: fetching headcodes for {crs} with key length {_apiKey.Length}");
  
             var cacheKey = $"{crs}|{timeOffset}";
  
@@ -93,11 +90,9 @@ namespace Huxley2.Services
  
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-apikey", _apiKey);
-                _logger.LogWarning($"HeadcodeService: calling {url}");
                 var response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning($"HeadcodeService: API returned {response.StatusCode} for {crs}");
                     return result;
                 }
  
@@ -137,8 +132,6 @@ namespace Huxley2.Services
                     var key = $"{stdKey}|{destCrs}";
                     result.TryAdd(key, trainid);
                 }
- 
-                _logger.LogWarning($"HeadcodeService: fetched {result.Count} headcodes for {crs}");
             }
             catch (Exception ex)
             {
