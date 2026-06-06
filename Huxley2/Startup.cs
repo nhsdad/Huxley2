@@ -74,7 +74,7 @@ namespace Huxley2
             {
                 app.UseDeveloperExceptionPage();
             }
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseETagger();
             app.UseRouting();
