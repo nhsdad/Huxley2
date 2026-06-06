@@ -23,7 +23,7 @@ namespace Huxley2
             _enableUpdateCheck = config.GetValue<bool>("EnableUpdateCheck");
         }
  
-        public static void ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             services.AddResponseCompression(options =>
             {
@@ -47,6 +47,9 @@ namespace Huxley2
             services.AddSingleton<IDateTimeService, DateTimeService>();
             services.AddSingleton<IMapperService, MapperService>();
  
+            // Singleton HTTP client
+            services.AddSingleton<HttpClient>();
+ 
             // HeadcodeService — fetches trainid from Rail Data Marketplace
             services.AddSingleton<HeadcodeService>();
  
@@ -55,7 +58,6 @@ namespace Huxley2
             services.AddSingleton<IDelaysService, DelaysService>();
             services.AddSingleton<IServiceDetailsService, ServiceDetailsService>();
             services.AddSingleton<IUpdateCheckService, UpdateCheckService>();
-            services.AddSingleton<HttpClient>();
         }
  
         public async void Configure(
