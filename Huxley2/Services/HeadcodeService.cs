@@ -61,12 +61,13 @@ namespace Huxley2.Services
             {
                 _cacheLock.Release();
             }
- 
+
             var result0 = await FetchHeadcodesAsync(crs, timeOffset);
             var result15 = await FetchHeadcodesAsync(crs, timeOffset + 15);
             var result30 = await FetchHeadcodesAsync(crs, timeOffset + 30);
             var result60 = await FetchHeadcodesAsync(crs, timeOffset + 60);
             var result120 = await FetchHeadcodesAsync(crs, timeOffset + 120);
+
 
             var result = new Dictionary<string, string>(result0);
             foreach (var kv in result15) result.TryAdd(kv.Key, kv.Value);
@@ -96,7 +97,7 @@ namespace Huxley2.Services
                 var ukTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
                 var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ukTimeZone).AddMinutes(timeOffset);
                 var timeParam = now.ToString("yyyyMMddTHHmmss");
-                var url = $"{BaseUrl}/GetDepBoardWithDetails/10/{crs.ToUpperInvariant()}/{timeParam}/240";
+                var url = $"{BaseUrl}/GetDepBoardWithDetails/{crs.ToUpperInvariant()}/{timeParam}";
  
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-apikey", _apiKey);
