@@ -31,6 +31,7 @@ namespace OpenLDBWS
  
         // Train headcode (e.g. 1W23) - enriched from Rail Data Marketplace staff API
         // Not available in the public Darwin SOAP API; set by HeadcodeService after fetch
+        [System.Xml.Serialization.XmlIgnore]
         public string trainid { get; set; }
  
         public static Guid ToGuid(string serviceID)
