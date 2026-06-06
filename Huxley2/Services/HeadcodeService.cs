@@ -47,6 +47,8 @@ namespace Huxley2.Services
                 _logger.LogWarning("HeadcodeService: DarwinStaffAccessToken not configured, skipping headcode lookup");
                 return new Dictionary<string, string>();
             }
+
+            _logger.LogInformation($"HeadcodeService: fetching headcodes for {crs} with key length {_apiKey.Length}");
  
             var cacheKey = $"{crs}|{timeOffset}";
  
