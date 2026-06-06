@@ -1,12 +1,12 @@
- // © James Singleton. EUPL-1.2 (see the LICENSE file for the full license governing this code).
+// © James Singleton. EUPL-1.2 (see the LICENSE file for the full license governing this code).
 // Modified to include headcode (trainid) enrichment from Rail Data Marketplace.
  
 using System.Threading.Tasks;
 using Huxley2.Interfaces;
 using Huxley2.Models;
 using Microsoft.Extensions.Logging;
-using OpenLDBWS;
 using OpenLDBSVWS;
+using OpenLDBWS;
  
 namespace Huxley2.Services
 {
@@ -118,50 +118,28 @@ namespace Huxley2.Services
         private async Task EnrichWithHeadcodesAsync(BaseStationBoard board, StationBoardRequest request)
         {
             if (board == null) return;
- 
-            // Only enrich departure boards with expanded details
             if (!request.Expand) return;
  
             var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
             if (headcodes.Count == 0) return;
  
-            // StationBoardWithDetails contains ServiceItem3[] trainServices
-            if (board is OpenLDBSVWS.StationBoardWithDetails staffBoard && staffBoard.trainServices != null)
-            {
-                foreach (var service in staffBoard.trainServices)
-                {
-                    TrySetTrainId(service, headcodes);
-                }
-                return;
-            }
- 
-            // Try public StationBoardWithDetails
-            if (board is OpenLDBWS.StationBoardWithDetails publicBoard && publicBoard.trainServices != null)
+            // Public API returns StationBoardWithDetails2 with ServiceItemWithLocations2[]
+            // ServiceItemWithLocations2 inherits from ServiceItem3 which inherits from BaseServiceItem2
+            // BaseServiceItem2 has trainid — so we can set it directly
+            if (board is StationBoardWithDetails2 publicBoard && publicBoard.trainServices != null)
             {
                 foreach (var service in publicBoard.trainServices)
                 {
-                    TrySetTrainIdPublic(service, headcodes);
+                    if (service?.std == null) continue;
+                    var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
+                    if (destCrs == null) continue;
+                    var key = $"{service.std:HH:mm}|{destCrs}";
+                    if (headcodes.TryGetValue(key, out var trainid))
+                    {
+                        service.trainid = trainid;
+                    }
                 }
             }
-        }
- 
-        private void TrySetTrainId(ServiceItem3 service, System.Collections.Generic.Dictionary<string, string> headcodes)
-        {
-            if (service?.std == null) return;
-            var destCrs = service.destination?.Length > 0 ? service.destination[0]?.crs : null;
-            if (destCrs == null) return;
- 
-            var key = $"{service.std:HH:mm}|{destCrs}";
-            if (headcodes.TryGetValue(key, out var trainid))
-            {
-                service.trainid = trainid;
-            }
-        }
- 
-        private void TrySetTrainIdPublic(OpenLDBWS.ServiceItem service, System.Collections.Generic.Dictionary<string, string> headcodes)
-        {
-            // Public ServiceItem doesn't have trainid — nothing to set
-            // This branch exists for completeness but won't enrich
         }
     }
 }
