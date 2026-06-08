@@ -36,12 +36,16 @@ namespace Huxley2.Services
             _logger.LogInformation($"Calling departure board SOAP endpoint for {request.Crs}");
             if (request.Expand)
             {
-                var boardWithDetails = await _soapClient.GetDepBoardWithDetailsAsync(
+                // Fire SOAP and headcode fetch concurrently — they are independent.
+                var boardTask = _soapClient.GetDepBoardWithDetailsAsync(
                     _mapperService.MapGetDepBoardWithDetailsRequest(request));
+                var headcodesTask = _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
+
+                var boardWithDetails = await boardTask;
                 var result = boardWithDetails.GetStationBoardResult;
                 if (result?.trainServices != null)
                 {
-                    var headcodes = await _headcodeService.GetHeadcodesAsync(request.Crs, request.TimeOffset);
+                    var headcodes = await headcodesTask;
                    
                     foreach (var service in result.trainServices)
                     {
