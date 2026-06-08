@@ -22,7 +22,7 @@ namespace Huxley2.Services
         // Cache: key = "CRS|HH:mm_offset", value = (dictionary, expiry)
         private readonly Dictionary<string, (Dictionary<string, string> data, DateTime expiry)> _cache = new();
         private readonly SemaphoreSlim _cacheLock = new(1, 1);
-        private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(60);
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
  
         private const string BaseUrl = "https://api1.raildata.org.uk/1010-live-departure-board---staff-version1_0/LDBSVWS/api/20220120";
  
@@ -62,12 +62,20 @@ namespace Huxley2.Services
                 _cacheLock.Release();
             }
 
-            var result0 = await FetchHeadcodesAsync(crs, timeOffset);
-            var result15 = await FetchHeadcodesAsync(crs, timeOffset + 15);
-            var result30 = await FetchHeadcodesAsync(crs, timeOffset + 30);
-            var result60 = await FetchHeadcodesAsync(crs, timeOffset + 60);
-            var result120 = await FetchHeadcodesAsync(crs, timeOffset + 120);
-
+            var tasks = new[]
+            {
+                FetchHeadcodesAsync(crs, timeOffset),
+                FetchHeadcodesAsync(crs, timeOffset + 15),
+                FetchHeadcodesAsync(crs, timeOffset + 30),
+                FetchHeadcodesAsync(crs, timeOffset + 60),
+                FetchHeadcodesAsync(crs, timeOffset + 120),
+            };
+            var results = await Task.WhenAll(tasks);
+            var result0 = results[0];
+            var result15 = results[1];
+            var result30 = results[2];
+            var result60 = results[3];
+            var result120 = results[4];
 
             var result = new Dictionary<string, string>(result0);
             foreach (var kv in result15) result.TryAdd(kv.Key, kv.Value);
